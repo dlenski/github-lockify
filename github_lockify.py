@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 
 def _parse_github_time(t):
     return t and datetime.strptime(t,'%Y-%m-%dT%H:%M:%SZ')
+def _days(d):
+    return timedelta(days=int(d))
 
 def main(args = None):
     p = argparse.ArgumentParser(description='Lock closed GitHub issues en masse.')
@@ -17,9 +19,9 @@ def main(args = None):
     g = p.add_argument_group('Authentication', description='Not required for a dry-run (except on a private repo), but required to actually lock issues.')
     g.add_argument('-t', '--token', help='GitHub personal access token with repo scope (see https://github.com/settings/tokens).')
     g = p.add_argument_group('Selecting closed issues to lock', description='All criteria must match in order for an issue to be locked.')
-    g.add_argument('-U','--updated-age', metavar='DAYS', type=lambda d: timedelta(days=int(d)), help='Only lock if UPDATED at least this many days ago')
-    g.add_argument('-C','--closed-age', metavar='DAYS', type=lambda d: timedelta(days=int(d)), help='Only lock if CLOSED at least this many days ago')
-    g.add_argument('--created-age', metavar='DAYS', type=lambda d: timedelta(days=int(d)), help='Only lock if CREATED at least this many days ago')
+    g.add_argument('-U','--updated-age', metavar='DAYS', type=_days, help='Only lock if UPDATED at least this many days ago')
+    g.add_argument('-C','--closed-age', metavar='DAYS', type=_days, help='Only lock if CLOSED at least this many days ago')
+    g.add_argument('--created-age', metavar='DAYS', type=_days, help='Only lock if CREATED at least this many days ago')
     g.add_argument('-l', '--label', default=[], action='append', help='Only lock if this label is applied (may be specified repeatedly to require multiple labels)')
     g.add_argument('-a','--assignee', metavar='USERNAME', help='Only lock if assigned to this user ("none" for unassigned)')
     g.add_argument('-c','--creator', metavar='USERNAME', help='Only lock if created by this user')
