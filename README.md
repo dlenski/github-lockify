@@ -41,9 +41,9 @@ optional arguments:
                         Lock-reason to apply (default resolved)
 
 Authentication:
-  Not required for a dry-run, but required to actually lock issues.
+  Not required for a dry-run (except on a private repo), but required to
+  actually lock issues.
 
-  -u USER, --user USER  GitHub username (default is same as repository owner)
   -t TOKEN, --token TOKEN
                         GitHub personal access token with repo scope (see
                         https://github.com/settings/tokens).

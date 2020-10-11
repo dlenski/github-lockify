@@ -14,8 +14,7 @@ def main(args = None):
     p.add_argument('repo', help='Github repository name')
     p.add_argument('--do-it', action='store_true', help='Actually lock the issues (default is a dry-run where issues are simply listed).')
     p.add_argument('-r', '--lock-reason', choices=['off-topic','too heated','resolved','spam'], default='resolved', help='Lock-reason to apply (default %(default)s)')
-    g = p.add_argument_group('Authentication', description='Not required for a dry-run, but required to actually lock issues.')
-    g.add_argument('-u', '--user', help='GitHub username (default is same as repository owner)')
+    g = p.add_argument_group('Authentication', description='Not required for a dry-run (except on a private repo), but required to actually lock issues.')
     g.add_argument('-t', '--token', help='GitHub personal access token with repo scope (see https://github.com/settings/tokens).')
     g = p.add_argument_group('Selecting closed issues to lock', description='All criteria must match in order for an issue to be locked.')
     g.add_argument('-U','--updated-age', metavar='DAYS', type=lambda d: timedelta(days=int(d)), help='Only lock if UPDATED at least this many days ago')
@@ -29,6 +28,9 @@ def main(args = None):
 
     now = datetime.utcnow()
     s = requests.session()
+    if args.token:
+        s.headers['Authorization'] = 'token ' + args.token
+
     params = {'state': 'closed', 'direction': 'asc', 'label': ','.join(args.label), 'assignee': args.assignee, 'creator': args.creator}
     if args.updated_age:
         params['since'] = (now - args.updated_age).isoformat()
@@ -72,8 +74,7 @@ def main(args = None):
             print('Locking issue #{} ("{}")...'.format(number, title), end='')
             r = s.put('https://api.github.com/repos/{}/{}/issues/{}/lock?lock_reason={}'.format(
                 args.owner, args.repo, number, parse.quote_plus(args.lock_reason)),
-                      headers={'accept':'application/vnd.github.sailor-v-preview+json'},
-                      auth=(args.user or args.owner, args.token))
+                      headers={'accept':'application/vnd.github.sailor-v-preview+json'})
             r.raise_for_status()
             print(' LOCKED')
         else:
