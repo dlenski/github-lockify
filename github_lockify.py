@@ -75,8 +75,7 @@ def main(args = None):
         for number, title in to_lock:
             print('Locking issue #{} ("{}")...'.format(number, title), end='')
             r = s.put('https://api.github.com/repos/{}/{}/issues/{}/lock?lock_reason={}'.format(
-                args.owner, args.repo, number, parse.quote_plus(args.lock_reason)),
-                      headers={'accept':'application/vnd.github.sailor-v-preview+json'})
+                args.owner, args.repo, number, parse.quote_plus(args.lock_reason)))
             r.raise_for_status()
             print(' LOCKED')
         else:
