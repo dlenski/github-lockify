@@ -52,7 +52,7 @@ Selecting closed issues to lock:
   All criteria must match in order for an issue to be locked.
 
   -U DAYS, --updated-age DAYS
-                        Only lock if UPDATED at least this many days ago
+                        Only lock if last UPDATED at least this many days ago
   -C DAYS, --closed-age DAYS
                         Only lock if CLOSED at least this many days ago
   --created-age DAYS    Only lock if CREATED at least this many days ago
