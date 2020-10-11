@@ -35,14 +35,18 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -u USER, --user USER  GitHub username (default is same as repository owner)
-  -t TOKEN, --token TOKEN
-                        GitHub personal access token with repo scope (see
-                        https://github.com/settings/tokens).
   --do-it               Actually lock the issues (default is a dry-run where
                         issues are simply listed).
   -r {off-topic,too heated,resolved,spam}, --lock-reason {off-topic,too heated,resolved,spam}
                         Lock-reason to apply (default resolved)
+
+Authentication:
+  Not required for a dry-run, but required to actually lock issues.
+
+  -u USER, --user USER  GitHub username (default is same as repository owner)
+  -t TOKEN, --token TOKEN
+                        GitHub personal access token with repo scope (see
+                        https://github.com/settings/tokens).
 
 Selecting closed issues to lock:
   All criteria must match in order for an issue to be locked.

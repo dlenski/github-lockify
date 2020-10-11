@@ -10,12 +10,13 @@ def _parse_github_time(t):
 
 def main(args = None):
     p = argparse.ArgumentParser(description='Lock closed GitHub issues en masse.')
-    p.add_argument('-u', '--user', help='GitHub username (default is same as repository owner)')
-    p.add_argument('-t', '--token', help='GitHub personal access token with repo scope (see https://github.com/settings/tokens).')
     p.add_argument('owner', help='GitHub repository owner')
     p.add_argument('repo', help='Github repository name')
     p.add_argument('--do-it', action='store_true', help='Actually lock the issues (default is a dry-run where issues are simply listed).')
     p.add_argument('-r', '--lock-reason', choices=['off-topic','too heated','resolved','spam'], default='resolved', help='Lock-reason to apply (default %(default)s)')
+    g = p.add_argument_group('Authentication', description='Not required for a dry-run, but required to actually lock issues.')
+    g.add_argument('-u', '--user', help='GitHub username (default is same as repository owner)')
+    g.add_argument('-t', '--token', help='GitHub personal access token with repo scope (see https://github.com/settings/tokens).')
     g = p.add_argument_group('Selecting closed issues to lock', description='All criteria must match in order for an issue to be locked.')
     g.add_argument('-U','--updated-age', metavar='DAYS', type=lambda d: timedelta(days=int(d)), help='Only lock if UPDATED at least this many days ago')
     g.add_argument('-C','--closed-age', metavar='DAYS', type=lambda d: timedelta(days=int(d)), help='Only lock if CLOSED at least this many days ago')
