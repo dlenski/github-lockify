@@ -2,8 +2,16 @@
 
 import argparse
 import requests
+import os
+import warnings
 from urllib import parse
 from datetime import datetime, timedelta
+
+try:
+    from yaml import safe_load as load_yaml, YAMLError
+except ImportError:
+    load_yaml = YAMLError = None
+
 
 def _parse_github_time(t):
     return t and datetime.strptime(t,'%Y-%m-%dT%H:%M:%SZ')
@@ -11,13 +19,31 @@ def _days(d):
     return timedelta(days=int(d))
 
 def main(args = None):
-    p = argparse.ArgumentParser(description='Lock closed GitHub issues en masse.')
-    p.add_argument('owner', help='GitHub repository owner')
+    default_owner = default_token = None
+    if load_yaml:
+        try:
+            with open(os.path.expanduser('~/.config/hub')) as f:
+                hub = load_yaml(f.read())
+        except OSError:
+            pass # file not found/inaccessible
+        except YAMLError:
+            warnings.warn("Could not open ~/.config/hub as YAML")
+
+        try:
+            gh = hub.get('github.com')
+            if gh:
+                default_owner = gh[0]['user']
+                default_token = gh[0]['oauth_token']
+        except Exception:
+            warnings.warn("Could not interpret ~/.config/hub")
+
+    p = argparse.ArgumentParser(description='Lock closed GitHub issues en masse.' + (' Found default user and personal access token in ~/.config/hub.' if default_owner else ''))
+    p.add_argument('owner', default=default_owner, help='GitHub repository owner' + (' (default %(default)s)' if default_owner else ''))
     p.add_argument('repo', help='Github repository name')
     p.add_argument('--do-it', action='store_true', help='Actually lock the issues (default is a dry-run where issues are simply listed).')
     p.add_argument('-r', '--lock-reason', choices=['off-topic','too heated','resolved','spam'], default='resolved', help='Lock-reason to apply (default %(default)s)')
     g = p.add_argument_group('Authentication', description='Not required for a dry-run (except on a private repo), but required to actually lock issues.')
-    g.add_argument('-t', '--token', help='GitHub personal access token with repo scope (see https://github.com/settings/tokens).')
+    g.add_argument('-t', '--token', default=default_token, help='GitHub personal access token with repo scope (see https://github.com/settings/tokens).')
     g = p.add_argument_group('Selecting closed issues to lock', description='All criteria must match in order for an issue to be locked.')
     g.add_argument('-U','--updated-age', metavar='DAYS', type=_days, help='Only lock if last UPDATED at least this many days ago')
     g.add_argument('-C','--closed-age', metavar='DAYS', type=_days, help='Only lock if CLOSED at least this many days ago')

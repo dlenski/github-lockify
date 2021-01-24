@@ -17,7 +17,10 @@ $ pip3 install https://github.com/dlenski/github-lockify/archive/master.zip
 ## How to use
 
 You'll need a [GitHub personal access token with repo scope](https://github.com/settings/tokens)
-for authentication:
+for authentication.
+
+If Github's [`hub` CLI](https://github.com/github/hub) and the [PyYAML](https://pyyaml.org) package are installed,
+the script will attempt to use the token from `~/.config/hub`.
 
 ```
 $ github-lockify --help

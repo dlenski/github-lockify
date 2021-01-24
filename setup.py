@@ -22,4 +22,7 @@ setup(name="github-lockify",
       url="https://github.com/dlenski/github-lockify",
       py_modules = ['github_lockify'],
       entry_points={ 'console_scripts': [ 'github-lockify=github_lockify:main' ] },
+      extras_require={
+        'hub': [ 'PyYAML>=3.0' ],
+      }
       )
