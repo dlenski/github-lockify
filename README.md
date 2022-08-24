@@ -21,6 +21,8 @@ for authentication.
 
 If Github's [`hub` CLI](https://github.com/github/hub) and the [PyYAML](https://pyyaml.org) package are installed,
 the script will attempt to use the token from `~/.config/hub`.
+If run from a directory containing a Git repository, it will use `git remote -v` to autodetect
+the default user and repository from the first `github.com` remote found.
 
 ```
 $ github-lockify --help
