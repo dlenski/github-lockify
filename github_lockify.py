@@ -3,6 +3,8 @@
 import argparse
 import requests
 import os
+import re
+import subprocess as sp
 import warnings
 from urllib import parse
 from datetime import datetime, timedelta
@@ -19,7 +21,7 @@ def _days(d):
     return timedelta(days=int(d))
 
 def main(args = None):
-    default_owner = default_token = None
+    default_owner = default_token = default_repo = github_remote = None
     if load_yaml:
         try:
             with open(os.path.expanduser('~/.config/hub')) as f:
@@ -37,9 +39,29 @@ def main(args = None):
         except Exception:
             warnings.warn("Could not interpret ~/.config/hub")
 
-    p = argparse.ArgumentParser(description='Lock closed GitHub issues en masse.' + (' Found default user and personal access token in ~/.config/hub.' if default_owner else ''))
-    p.add_argument('owner', default=default_owner, help='GitHub repository owner' + (' (default %(default)s)' if default_owner else ''))
-    p.add_argument('repo', help='Github repository name')
+    try:
+        for line in sp.check_output(['git', 'remote', '-v'], universal_newlines=True).splitlines():
+            fields = line.split()
+            if len(fields) >= 2:
+                m = re.search(r'github.com[:/]([^/]+)/([^/]+?)(?=\.git|$)', fields[1])
+                if m:
+                    default_owner, default_repo = m.groups()
+                    github_remote = fields[0]
+                    break
+    except sp.CalledProcessError:
+        pass
+
+    description = 'Lock closed GitHub issues en masse.'
+    if default_owner and default_token:
+        description += ' Found default user and personal access token in ~/.config/hub.'
+    if default_owner and default_repo:
+        description += ' Found default user and repo from git remote %r.' % github_remote
+
+    p = argparse.ArgumentParser(description=description)
+    p.add_argument('owner', default=default_owner, nargs='?' if default_owner else None,
+                   help='GitHub repository owner' + (' (default %(default)s)' if default_owner else ''))
+    p.add_argument('repo', default=default_repo, nargs='?' if default_repo else None,
+                   help='Github repository name' + (' (default %(default)s)' if default_repo else ''))
     p.add_argument('--do-it', action='store_true', help='Actually lock the issues (default is a dry-run where issues are simply listed).')
     p.add_argument('-r', '--lock-reason', choices=['off-topic','too heated','resolved','spam'], default='resolved', help='Lock-reason to apply (default %(default)s)')
     g = p.add_argument_group('Authentication', description='Not required for a dry-run (except on a private repo), but required to actually lock issues.')
