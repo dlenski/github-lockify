@@ -16,18 +16,21 @@ except ImportError:
 
 
 def _parse_github_time(t):
-    return t and datetime.strptime(t,'%Y-%m-%dT%H:%M:%SZ')
+    return t and datetime.strptime(t, '%Y-%m-%dT%H:%M:%SZ')
+
+
 def _days(d):
     return timedelta(days=int(d))
 
-def main(args = None):
+
+def main(args=None):
     default_owner = default_token = default_repo = github_remote = None
     if load_yaml:
         try:
             with open(os.path.expanduser('~/.config/hub')) as f:
                 hub = load_yaml(f.read())
         except OSError:
-            pass # file not found/inaccessible
+            pass  # file not found/inaccessible
         except YAMLError:
             warnings.warn("Could not open ~/.config/hub as YAML")
 
@@ -55,7 +58,7 @@ def main(args = None):
     if default_owner and default_token:
         description += ' Found default user and personal access token in ~/.config/hub.'
     if default_owner and default_repo:
-        description += ' Found default user and repo from git remote %r.' % github_remote
+        description += f' Found default user and repo from git remote {github_remote!r}.'
 
     p = argparse.ArgumentParser(description=description)
     p.add_argument('owner', default=default_owner, nargs='?' if default_owner else None,
@@ -63,31 +66,32 @@ def main(args = None):
     p.add_argument('repo', default=default_repo, nargs='?' if default_repo else None,
                    help='Github repository name' + (' (default %(default)s)' if default_repo else ''))
     p.add_argument('--do-it', action='store_true', help='Actually lock the issues (default is a dry-run where issues are simply listed).')
-    p.add_argument('-r', '--lock-reason', choices=['off-topic','too heated','resolved','spam'], default='resolved', help='Lock-reason to apply (default %(default)s)')
+    p.add_argument('-r', '--lock-reason', choices=['off-topic', 'too heated', 'resolved', 'spam'], default='resolved', help='Lock-reason to apply (default %(default)s)')
     g = p.add_argument_group('Authentication', description='Not required for a dry-run (except on a private repo), but required to actually lock issues.')
     g.add_argument('-t', '--token', default=default_token, help='GitHub personal access token with repo scope (see https://github.com/settings/tokens).')
     g = p.add_argument_group('Selecting closed issues to lock', description='All criteria must match in order for an issue to be locked.')
-    g.add_argument('-U','--updated-age', metavar='DAYS', type=_days, help='Only lock if last UPDATED at least this many days ago')
-    g.add_argument('-C','--closed-age', metavar='DAYS', type=_days, help='Only lock if CLOSED at least this many days ago')
+    g.add_argument('-U', '--updated-age', metavar='DAYS', type=_days, help='Only lock if last UPDATED at least this many days ago')
+    g.add_argument('-C', '--closed-age', metavar='DAYS', type=_days, help='Only lock if CLOSED at least this many days ago')
     g.add_argument('--created-age', metavar='DAYS', type=_days, help='Only lock if CREATED at least this many days ago')
     g.add_argument('-l', '--label', default=[], action='append', help='Only lock if this label is applied (may be specified repeatedly to require multiple labels)')
-    g.add_argument('-a','--assignee', metavar='USERNAME', help='Only lock if assigned to this user ("none" for unassigned)')
-    g.add_argument('-c','--creator', metavar='USERNAME', help='Only lock if created by this user')
+    g.add_argument('-a', '--assignee', metavar='USERNAME', help='Only lock if assigned to this user ("none" for unassigned)')
+    g.add_argument('-c', '--creator', metavar='USERNAME', help='Only lock if created by this user')
 
     args = p.parse_args()
 
     now = datetime.utcnow()
     s = requests.session()
+    s.headers['User-Agent'] = 'https://github.com/dlenski/github-lockify'
     if args.token:
         s.headers['Authorization'] = 'token ' + args.token
 
     params = {'state': 'closed', 'direction': 'asc', 'label': ','.join(args.label), 'assignee': args.assignee, 'creator': args.creator}
-    params = {k:v for k,v in params.items() if v}
+    params = {k: v for k, v in params.items() if v}
 
     issues = []
-    next = 'https://api.github.com/repos/{}/{}/issues?per_page=100&{}'.format(args.owner, args.repo, parse.urlencode(params))
+    next = f'https://api.github.com/repos/{args.owner}/{args.repo}/issues?per_page=100&{parse.urlencode(params)}'
     while next:
-        print('Fetching {} ...'.format(next))
+        print(f'Fetching {next} ...')
         r = s.get(next)
         r.raise_for_status()
         next = r.links.get('next', {}).get('url')
@@ -105,7 +109,7 @@ def main(args = None):
             continue
         if issue['locked']:
             continue
-        print ('Will lock issue #{} (created {}, updated {}, closed {} days ago; {})\n\t"{}"'.format(
+        print('Will lock issue #{} (created {}, updated {}, closed {} days ago; {})\n\t"{}"'.format(
             issue['number'],
             (now - _parse_github_time(issue['created_at'])).days,
             (now - _parse_github_time(issue['updated_at'])).days,
@@ -115,19 +119,20 @@ def main(args = None):
         ))
         to_lock.append((issue['number'], issue['title']))
     else:
-        print('Found {} issues to lock.'.format(len(to_lock)))
+        print(f'Found {len(to_lock)} issues to lock.')
 
     if args.do_it and args.token:
         for number, title in to_lock:
-            print('Locking issue #{} ("{}")...'.format(number, title), end='')
+            print(f'Locking issue #{number} ("{title}")...', end='')
             r = s.put('https://api.github.com/repos/{}/{}/issues/{}/lock?lock_reason={}'.format(
                 args.owner, args.repo, number, parse.quote_plus(args.lock_reason)))
             r.raise_for_status()
             print(' LOCKED')
         else:
-            print('Done. Locked {} issues.'.format(len(to_lock)))
+            print(f'Done. Locked {len(to_lock)} issues.')
     else:
         print('Dry run complete. Rerun with --token and --do-it to actually lock issues.')
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()
