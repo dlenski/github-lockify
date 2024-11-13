@@ -35,12 +35,12 @@ def main(args=None):
             warnings.warn("Could not open ~/.config/hub as YAML")
 
         try:
-            gh = hub.get('github.com')
-            if gh:
-                default_owner = gh[0]['user']
-                default_token = gh[0]['oauth_token']
+            config_tokens = {
+                site: {t['user']: t['oauth_token'] for t in tokens}
+                for site, tokens in hub.items()}
         except Exception:
             warnings.warn("Could not interpret ~/.config/hub")
+            config_tokens = {}
 
     try:
         for line in sp.check_output(['git', 'remote', '-v'], universal_newlines=True).splitlines():
@@ -55,10 +55,19 @@ def main(args=None):
         pass
 
     description = 'Lock closed GitHub issues en masse.'
-    if default_owner and default_token:
-        description += ' Found default user and personal access token in ~/.config/hub.'
     if default_owner and default_repo:
-        description += f' Found default user and repo from git remote {github_remote!r}.'
+        if 'github.com' in config_tokens and default_owner in config_tokens['github.com']:
+            default_token = config_tokens['github.com'][default_owner]
+            description += f' Found default user {default_owner} and repo from git remote {github_remote!r}, along with matching personal access token in ~/.config/hub.'
+        elif 'github.com' in config_tokens:
+            first_owner, default_token = next(iter(config_tokens['github.com'].items()))
+            description += f' Found default user {default_owner} and repo from git remote {github_remote!r}, along with personal access token for {first_owner} in ~/.config/hub.'
+        else:
+            default_token = None
+            description += f' Found default user {default_owner} and repo from git remote {github_remote!r}.'
+    elif 'github.com' in config_tokens:
+        default_owner, default_token = next(iter(config_tokens['github.com'].items()))
+        description += ' Found default user {default_owner} and personal access token in ~/.config/hub.'
 
     p = argparse.ArgumentParser(description=description)
     p.add_argument('owner', default=default_owner, nargs='?' if default_owner else None,
