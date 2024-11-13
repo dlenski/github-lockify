@@ -89,12 +89,12 @@ def main(args=None):
     params = {k: v for k, v in params.items() if v}
 
     issues = []
-    next = f'https://api.github.com/repos/{args.owner}/{args.repo}/issues?per_page=100&{parse.urlencode(params)}'
-    while next:
-        print(f'Fetching {next} ...')
-        r = s.get(next)
+    nextpage = f'https://api.github.com/repos/{args.owner}/{args.repo}/issues?per_page=100&{parse.urlencode(params)}'
+    while nextpage:
+        print(f'Fetching {nextpage} ...')
+        r = s.get(nextpage)
         r.raise_for_status()
-        next = r.links.get('next', {}).get('url')
+        nextpage = r.links.get('next', {}).get('url')
         issues += r.json()
 
     to_lock = []
